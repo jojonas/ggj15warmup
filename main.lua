@@ -4,7 +4,6 @@ function makeCell(cellType)
     cell.T_inflame = inflameTemperatures[cellType] 
     cell.burnMass = burnMasses[cellType] -- seconds of burning
 	cell.T_burn = burnTemperatures[cellType]
-    --cell.T_burn = 3.5 * cell.T_inflame
     return cell
 end
 
