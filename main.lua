@@ -1,3 +1,7 @@
+require "utility"
+require "update"
+require "draw"
+
 function makeCell(cellType) 
 	cell = {}
 	cell.T = outsideTemperature
@@ -11,16 +15,12 @@ function isBurning(cell)
 	return (cell.T > cell.T_inflame) and (cell.burnMass > 0)
 end
 
-function clamp(value, lo, hi)
-	return math.max(math.min(value, hi), lo)
-end
-
 function loadConfig()
 	local conf = {}
 	local f, err = loadstring(love.filesystem.read("CONFIGURE.ME"))
 	if f == nil then
 		gameMode = "error"
-		errorMessage = "CONFIGURE.ME could not be opened or interpreted. Error message: " .. err
+		errorMessage = "CONFIGURE.ME could not be interpreted. Error message: " .. err
 	else
 		conf = f()
 		if conf == nil then
@@ -37,7 +37,6 @@ function loadConfig()
 end
 
 function love.load()
-	simDT = 1.0/60.0
 	fireDT = 0.25
 	renderCellSize = 10
 	outsideTemperature = 20.0
@@ -64,94 +63,50 @@ function love.load()
 			table.insert(cells.data[y], makeCell(pixel))
 		end
 	end
-
-	simulationTime = love.timer.getTime()
+	
 	nextCellUpdate = simulationTime
 end
 
-function randrangef(min, max)
-    return min + (max - min)*love.math.random()
-end
+function love.run()
+	math.randomseed(os.time())
+	math.random() math.random()
+	
+	simulationTime = love.timer.getTime()
+	simulationDt = 1.0/30.0
 
-function processNeighbour(x, y, deltaX, deltaY)
-	if cells.data[y+deltaY] and cells.data[y+deltaY][x+deltaX] then
-		local cell = cells.data[y][x]
-		local neighbour = cells.data[y + deltaY][x + deltaX]
-		local delta = heatTransportCoeff*(cell.T - neighbour.T)*randrangef(0.9, 1.1)
-		neighbour.T = neighbour.T + delta
-	end
-end
+	if love.load then love.load(arg) end
 
-function love.update()
-	if simulationTime < love.timer.getTime() then
-		simulationTime = simulationTime + simDT
-		
-		local sx = math.floor(love.mouse.getX() / renderCellSize)+1
-		local sy = math.floor(love.mouse.getY() / renderCellSize)+1
-		if cells.data[sy] and cells.data[sy][sx] then
-			cells.data[sy][sx].T = cells.data[sy][sx].T + ((love.mouse.isDown("l") and 1 or 0) - (love.mouse.isDown("r") and 1 or 0)) * 10
-		end
-		
-		if nextCellUpdate < simulationTime then
-			for y = 1, cells.height do
-				for x = 1, cells.width do
-					cell = cells.data[y][x]
-					if isBurning(cells.data[y][x]) and love.math.random() < 0.8 then
-						cell.burnMass = cell.burnMass - 1
-						cell.T = cell.T_burn
-					else
-						cell.T = cell.T - (cell.T - outsideTemperature) * outsideCooling
+	-- Main loop time.
+   while true do
+		while simulationTime < love.timer.getTime() do
+			simulationTime = simulationTime + simulationDt
+			-- Process events.
+			if love.event then
+				love.event.pump()
+				for e,a,b,c,d in love.event.poll() do
+					if e == "quit" then
+						if not love.quit or not love.quit() then
+							if love.audio then
+								love.audio.stop()
+							end
+							return
+						end
 					end
-					
-					for i = 1, #deltaTuples do
-						processNeighbour(x, y, deltaTuples[i][1], deltaTuples[i][2]) 
-					end
+					love.handlers[e](a,b,c,d)
 				end
 			end
-
-			nextCellUpdate = simulationTime + fireDT
-		end
-	end
-end
-
-function love.draw()
-	if gameMode == "error" then
-		love.graphics.setColor(255,255,255)
-		love.graphics.printf(errorMessage, 5, 5, 500)
-	else
-		local font_offset_y = (renderCellSize - love.graphics.getFont():getHeight()) / 2
-		for x=1,cells.width do
-			for y=1,cells.height do
-				local X = (x-1)*renderCellSize 
-				local Y = (y-1)*renderCellSize 
-				local cell = cells.data[y][x]
-
-				if isBurning(cell) then
-					love.graphics.setColor(255,0,0)
-				elseif cell.burnMass <= 0 then
-					if cell.T > cell.T_inflame then
-						love.graphics.setColor(150,50,0)
-					else 
-						love.graphics.setColor(0,0,20)
-					end
-				else
-					local val = clamp((1000-cell.T_inflame)*255/1000, 0, 255)
-					love.graphics.setColor(val, val, val)
-				end
-				love.graphics.rectangle("fill", X, Y, renderCellSize, renderCellSize)
-			end
+			
+			tickSimulation()
 		end
 
-		local sx = math.floor(love.mouse.getX() / renderCellSize)+1
-		local sy = math.floor(love.mouse.getY() / renderCellSize)+1
-		if cells.data[sy] and cells.data[sy][sx] then
-			local selected = cells.data[sy][sx]
-			local text = ""
-			text = text .. "(" .. sx .. ", " .. sy .. ")\n"
-			text = text .. "T: " .. selected.T .. " (inflame at " .. selected.T_inflame .. ")\n"
-			text = text .. "m: " .. selected.burnMass .. "\n"
-			love.graphics.setColor(255,255,255)
-			love.graphics.printf(text, 5, 5, 500)
+		-- Call update and draw
+		if love.update then love.update(dt) end -- will pass 0 if love.timer is disabled
+		if love.graphics then
+			love.graphics.clear()
+			if love.draw then love.draw() end
 		end
+
+		if love.timer then love.timer.sleep(0.001) end
+		if love.graphics then love.graphics.present() end
 	end
 end
