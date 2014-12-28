@@ -100,8 +100,12 @@ function love.draw()
             if isBurning(cell) then
                 love.graphics.setColor(255,0,0)
             elseif cell.burnMass <= 0 then
-                     love.graphics.setColor(0,0,20)
-                else
+				if cell.T > cell.T_inflame then
+					love.graphics.setColor(150,50,0)
+				else 
+					love.graphics.setColor(0,0,20)
+				end
+            else
                 local val = clamp((1000-cell.T_inflame)*255/1000, 0, 255)
                 love.graphics.setColor(val, val, val)
             end
