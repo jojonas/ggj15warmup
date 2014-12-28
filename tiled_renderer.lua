@@ -1,7 +1,7 @@
-function load(filename) 
+function loadMap(filename) 
 	local map = dofile(filename)
 	assert(map.orientation=="orthogonal", "Cannot load non-orthogonal maps.")
-	for i in 1,#map.tilesets do
+	for i=1,#map.tilesets do
 		local tileset = map.tilesets[i]
 		tileset.image = love.graphics.newImage(tileset.image)
 		tileset.width  = tileset.imagewidth / tileset.tilewidth
@@ -16,35 +16,38 @@ function load(filename)
 			end
 		end 
 		
-		tileset.batch = love.graphics.newSpriteBatch(tileset.image, map.with*map.height)
+		tileset.batch = love.graphics.newSpriteBatch(tileset.image, map.width*map.height)
 	end
 	return map
 end
 
-function find_tileset(map, id) 
+function _find_tileset(map, id) 
 	for k=1,#map.tilesets do
 		if map.tilesets[k].firstgid > id then 
-			return map.tilsets[k-1]
+			return map.tilesets[k-1]
 		end
 	end
 end
 
-function draw(map)
+function drawMap(map)
 	for i=1,#map.layers do
 		for j=1,#map.tilesets do
-			map.tileset[j].batch:bind()
-			map.tileset[j].batch:clear()
+			map.tilesets[j].batch:bind()
+			map.tilesets[j].batch:clear()
 		end
 		local layer = map.layers[i]
 		for j=0,#layer.data-1 do
 			local id = layer.data[j+1]
-			local x = j % layer.width
-			local y = math.floor(j / layer.width)
-			local tileset = find_tileset(map, id)
-			tileset.batch:add(tileset.quads[id - tileset.firstgid], x*map.tilewidth, y*map.tileheight)
+			if id > 0 then
+				local x = j % layer.width
+				local y = math.floor(j / layer.width)
+				local tileset = _find_tileset(map, id)
+				tileset.batch:add(tileset.quads[id - tileset.firstgid], x*map.tilewidth, y*map.tileheight)
+			end
 		end
 		for j=1,#map.tilesets do
-			map.tileset[j].batch:unbind()
+			map.tilesets[j].batch:unbind()
+			love.graphics.draw(map.tilesets[j].batch)
 		end
 	end
 end
