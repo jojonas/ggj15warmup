@@ -1,0 +1,42 @@
+Unfallort kommen (rumfahren)
+(Absperren)
+In Gebäude rein (rumrennen, zellulärer Automat mit Feuer, So kacke bei)
+Zellulärer Automat, von außen Löschen!
+
+You're fired! (pun intended), wenn zu viele civilian casualties und zu viele brennende Gebäude
+
+911-call am anfang aufnehmen und abspielen und sagen in welcher Straße und so und dann fährt man hin und man kann mit M ne Karte sehen.
+Vielleicht zufällig generieren?
+
+Jede Zelle hat Brennwert W, die runter geht, wenn das brennt, eine Feuertemperatur F und eine Entzündungstemperatur S
+Und umliegende Zelle entzünden sich in jedem Simulationsstep, wenn umliegende Zellen mit mindestens der Entzündungstemperatur brennen
+
+Wärmetransportalgo:
+Es fließt Wärme zwischen den Zellen
+Entzündungstemperaturen erreicht -> Reaktion aktiviert und Energie ins System
+Und Zellen strahlen Wärme ab
+
+Szenarien:
+Waldbrand!
+Bauernhöfe, Tankstellen
+
+Parameter:
+    Starttemperatur (global) ~ 20°
+    Entzündungstemperatur - http://www.ffw-markt-eschlkam.de/feuerwehr/feuerwehr/de/feuerwehrlexikon/entzuendungstemperatur.php , http://de.wikipedia.org/wiki/Z%C3%BCndtemperatur
+    Brennmasse ~ 25
+    Aufheizung ~ 1
+    Brenntemperatur ~ 1.5 * Entzündungstemperatur
+    Abgabekoeffizient ~ 1
+    Aufnahmekoeffizient ~ 1
+
+für jeden Zeitschritt (dt = 1s), für jede Zelle z:
+    wenn z.temperatur >= z.entzündungstemperatur UND z.brennmasse > 0 UND random() < 0.8:
+        z.brennmasse -= 1
+
+        z.temperatur += z.aufheizung
+        if z.temperatur > z.brenntemperatur:
+            z.temperatur = z.brenntemperatur
+
+    für jeden Nachbarn n:
+        n.temperatur += z.abgabekoeff*n.aufnahmekoeff*(z.temperatur-n.temperatur)*randf(0.9, 1.1)
+        
