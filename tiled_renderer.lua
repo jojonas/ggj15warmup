@@ -27,6 +27,7 @@ function _find_tileset(map, id)
 			return map.tilesets[k-1]
 		end
 	end
+	return map.tilesets[#map.tilesets]
 end
 
 function drawMap(map)
